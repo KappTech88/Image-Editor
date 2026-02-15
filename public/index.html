@@ -3,32 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Editor - Text to Image &amp; Image to Image</title>
+  <title>Image Editor</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
-    <!-- Header -->
     <header class="header">
       <h1>Image Editor</h1>
       <span class="header-badge">Powered by ModelsLab</span>
     </header>
 
     <div class="main-layout">
-      <!-- Left Panel: Settings -->
+      <!-- Left Panel -->
       <aside class="settings-panel">
-        <!-- Mode Toggle -->
         <div class="panel-section">
-          <h3>Mode</h3>
-          <div class="mode-toggle">
-            <button class="mode-btn active" data-mode="text2img">Text to Image</button>
-            <button class="mode-btn" data-mode="img2img">Image to Image</button>
-          </div>
-        </div>
-
-        <!-- Init Image Section (img2img only) -->
-        <div class="panel-section img2img-only" id="init-image-section" style="display: none;">
-          <h3>Init Image</h3>
+          <h3>Source Image</h3>
           <label>
             Image URL
             <input type="text" id="init-image-url" placeholder="Paste image URL here..." />
@@ -41,10 +30,20 @@
               <span>Click or drag image here</span>
             </div>
             <div class="upload-preview" id="upload-preview" style="display: none;">
-              <img id="preview-img" alt="Init image preview" />
+              <img id="preview-img" alt="Source image preview" />
               <button class="remove-image-btn" id="remove-image" title="Remove image">x</button>
             </div>
           </div>
+        </div>
+
+        <div class="panel-section">
+          <h3>Edit Settings</h3>
+          <label>
+            Strength
+            <input type="range" id="strength" min="0.1" max="1.0" value="0.7" step="0.05" />
+            <span id="strength-val">0.7</span>
+          </label>
+          <span class="hint">Lower = closer to original, Higher = more creative</span>
           <label>
             Aspect Ratio
             <select id="aspect-ratio">
@@ -64,87 +63,24 @@
               <option value="1k">1K (Fast)</option>
             </select>
           </label>
-          <label>
-            Strength
-            <input type="range" id="strength" min="0.1" max="1.0" value="0.7" step="0.05" />
-            <span id="strength-val">0.7</span>
-          </label>
-          <span class="hint">Lower = closer to original, Higher = more creative</span>
-        </div>
-
-        <!-- Dimensions (text2img only) -->
-        <div class="panel-section text2img-only" id="dimensions-section">
-          <h3>Dimensions</h3>
-          <div class="dimension-row">
-            <label>
-              Width
-              <select id="img-width">
-                <option value="256">256</option>
-                <option value="512" selected>512</option>
-                <option value="768">768</option>
-                <option value="1024">1024</option>
-              </select>
-            </label>
-            <label>
-              Height
-              <select id="img-height">
-                <option value="256">256</option>
-                <option value="512" selected>512</option>
-                <option value="768">768</option>
-                <option value="1024">1024</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <!-- Generation Settings (text2img only) -->
-        <div class="panel-section text2img-only" id="gen-settings-section">
-          <h3>Generation Settings</h3>
-          <label>
-            Samples
-            <select id="samples">
-              <option value="1" selected>1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-            </select>
-          </label>
-          <label>
-            Steps
-            <input type="range" id="steps" min="10" max="50" value="30" />
-            <span id="steps-val">30</span>
-          </label>
-          <label>
-            Guidance Scale
-            <input type="range" id="guidance" min="1" max="20" value="7.5" step="0.5" />
-            <span id="guidance-val">7.5</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="enhance-prompt" />
-            Enhance prompt
-          </label>
         </div>
       </aside>
 
-      <!-- Center: Prompt & Results -->
+      <!-- Main Content -->
       <main class="content-area">
         <div class="prompt-section">
           <label>
-            <h3>Prompt</h3>
-            <textarea id="prompt" rows="3" placeholder="Describe the image you want to generate..."></textarea>
+            <h3>Edit Prompt</h3>
+            <textarea id="prompt" rows="3" placeholder="Describe how you want the image edited... (e.g. &quot;change her pants to yellow&quot;)"></textarea>
           </label>
-          <label id="negative-prompt-section">
-            <h3>Negative Prompt</h3>
-            <textarea id="negative-prompt" rows="2" placeholder="What to exclude from the image (optional)..."></textarea>
-          </label>
-          <button id="btn-generate" class="generate-btn">Generate Image</button>
+          <button id="btn-edit" class="edit-btn">Edit Image</button>
           <div id="status" class="status"></div>
         </div>
 
         <div class="results-section">
-          <h3>Generated Images</h3>
+          <h3>Result</h3>
           <div id="image-grid" class="image-grid">
-            <div class="placeholder">Your generated images will appear here</div>
+            <div class="placeholder">Upload an image and describe your edit</div>
           </div>
         </div>
       </main>

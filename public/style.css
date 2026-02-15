@@ -59,7 +59,7 @@ body {
   border: 1px solid var(--border);
 }
 
-/* Main layout */
+/* Layout */
 .main-layout {
   display: flex;
   flex: 1;
@@ -96,7 +96,6 @@ body {
 }
 
 .panel-section select,
-.panel-section input[type="password"],
 .panel-section input[type="text"] {
   width: 100%;
   padding: 8px 10px;
@@ -114,78 +113,16 @@ body {
   border-color: var(--accent);
 }
 
-.panel-section select optgroup {
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--bg-tertiary);
-}
-
-.panel-section select option {
-  font-weight: normal;
-  color: var(--text-primary);
-  padding: 4px 8px;
-}
-
 .panel-section input[type="range"] {
   width: 100%;
   accent-color: var(--accent);
 }
 
-.dimension-row {
-  display: flex;
-  gap: 10px;
-}
-
-.dimension-row label {
-  flex: 1;
-}
-
-.checkbox-label {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 8px !important;
-  cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-  accent-color: var(--accent);
-  width: 16px;
-  height: 16px;
-}
-
-/* Mode Toggle */
-.mode-toggle {
-  display: flex;
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.mode-btn {
-  flex: 1;
-  padding: 8px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  background: var(--bg-tertiary);
+.hint {
+  font-size: 10px;
   color: var(--text-secondary);
-  font-family: inherit;
-}
-
-.mode-btn:first-child {
-  border-right: 1px solid var(--border);
-}
-
-.mode-btn.active {
-  background: var(--accent);
-  color: #fff;
-}
-
-.mode-btn:hover:not(.active) {
-  background: var(--border);
-  color: var(--text-primary);
+  opacity: 0.7;
+  margin-bottom: 10px;
 }
 
 /* Upload area */
@@ -215,13 +152,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 20px 10px;
+  padding: 24px 10px;
   color: var(--text-secondary);
   font-size: 12px;
 }
 
 .upload-icon {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 300;
   line-height: 1;
   color: var(--accent);
@@ -258,12 +195,6 @@ body {
 
 .remove-image-btn:hover {
   background: var(--danger);
-}
-
-.hint {
-  font-size: 10px;
-  color: var(--text-secondary);
-  opacity: 0.7;
 }
 
 /* Content area */
@@ -307,7 +238,7 @@ body {
   border-color: var(--accent);
 }
 
-.generate-btn {
+.edit-btn {
   padding: 12px 24px;
   background: var(--accent);
   color: #fff;
@@ -320,11 +251,11 @@ body {
   align-self: flex-start;
 }
 
-.generate-btn:hover:not(:disabled) {
+.edit-btn:hover:not(:disabled) {
   background: var(--accent-hover);
 }
 
-.generate-btn:disabled {
+.edit-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -397,7 +328,7 @@ body {
 
 .download-btn,
 .open-btn,
-.use-init-btn {
+.re-edit-btn {
   flex: 1;
   text-align: center;
   padding: 6px 12px;
@@ -430,12 +361,12 @@ body {
   background: var(--border);
 }
 
-.use-init-btn {
+.re-edit-btn {
   background: var(--success);
   color: #fff;
 }
 
-.use-init-btn:hover {
+.re-edit-btn:hover {
   background: #48a868;
 }
 
@@ -457,7 +388,7 @@ body {
   background: var(--text-secondary);
 }
 
-/* Loading spinner */
+/* Spinner */
 .spinner {
   display: inline-block;
   width: 16px;
@@ -474,7 +405,6 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* Image error state */
 .image-error {
   padding: 40px 20px;
   text-align: center;
