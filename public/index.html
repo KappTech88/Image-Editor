@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Text to Image Generator</title>
+  <title>AI Image Editor</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <!-- Header -->
     <header class="header">
-      <h1>Text to Image Generator</h1>
+      <h1>AI Image Editor</h1>
       <span class="header-badge">Powered by ModelsLab</span>
     </header>
 
@@ -90,10 +90,67 @@
             Enhance prompt
           </label>
         </div>
+
+        <!-- Img2Img Strength (shown only in img2img mode) -->
+        <div class="panel-section" id="strength-section" style="display:none;">
+          <h3>Image-to-Image</h3>
+          <label>
+            Strength
+            <input type="range" id="strength" min="0.1" max="1.0" value="0.7" step="0.05" />
+            <span id="strength-val">0.7</span>
+          </label>
+          <p class="hint">Higher values = more transformation from the original image.</p>
+        </div>
       </aside>
 
       <!-- Center: Prompt & Results -->
       <main class="content-area">
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="txt2img">Text to Image</button>
+          <button class="mode-tab" data-mode="img2img">Image to Image</button>
+        </div>
+
+        <!-- Image Input (shown only in img2img mode) -->
+        <div id="img-input-section" class="img-input-section" style="display:none;">
+          <h3>Source Image</h3>
+          <div class="img-source-tabs">
+            <button class="img-source-tab active" data-source="upload">Upload File</button>
+            <button class="img-source-tab" data-source="url">Paste URL</button>
+          </div>
+
+          <!-- File Upload -->
+          <div id="upload-area" class="upload-area">
+            <div id="drop-zone" class="drop-zone">
+              <div class="drop-zone-content">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>Drag and drop an image here</p>
+                <span>or</span>
+                <label class="file-browse-btn">
+                  Browse Files
+                  <input type="file" id="file-input" accept="image/*" hidden />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- URL Input -->
+          <div id="url-area" class="url-area" style="display:none;">
+            <input type="text" id="img-url" placeholder="https://example.com/image.jpg" />
+            <button id="btn-load-url" class="load-url-btn">Load</button>
+          </div>
+
+          <!-- Preview -->
+          <div id="img-preview" class="img-preview" style="display:none;">
+            <img id="preview-img" src="" alt="Source image preview" />
+            <button id="btn-clear-img" class="clear-img-btn">Remove</button>
+          </div>
+        </div>
+
         <div class="prompt-section">
           <label>
             <h3>Prompt</h3>
