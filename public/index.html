@@ -39,8 +39,12 @@
           <label>
             Model ID
             <select id="model-select">
+              <optgroup label="Grok Models">
+                <option value="grok" selected>Grok Imagine</option>
+                <option value="grok-imagine-image-edit">Grok Imagine Image Edit</option>
+              </optgroup>
               <optgroup label="Flux Models">
-                <option value="flux" selected>Flux</option>
+                <option value="flux">Flux</option>
                 <option value="flux-dev">Flux Dev</option>
                 <option value="flux-schnell">Flux Schnell</option>
               </optgroup>
@@ -165,10 +169,6 @@
           <label>
             <h3>Prompt</h3>
             <textarea id="prompt" rows="3" placeholder="Describe the image you want to generate..."></textarea>
-          </label>
-          <label>
-            <h3>Negative Prompt</h3>
-            <textarea id="negative-prompt" rows="2" placeholder="What to exclude from the image (optional)..."></textarea>
           </label>
           <button id="btn-generate" class="generate-btn">Generate Image</button>
           <div id="status" class="status"></div>
