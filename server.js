@@ -16,7 +16,7 @@ const POLL_INTERVAL = 3000; // 3 seconds
 const MAX_PROMPT_LENGTH = 1000; // Maximum characters for prompts
 
 // System negative prompt for image quality control
-const SYSTEM_NEGATIVE_PROMPT = "blurry, low quality, distorted, deformed, ugly, bad anatomy, bad proportions, watermark, signature, text, logo, jpeg artifacts, compression artifacts, low resolution, worst quality, low quality, normal quality, amateur, beginner, grainy, out of focus, poorly drawn";
+const SYSTEM_NEGATIVE_PROMPT = "blurry, low quality, distorted, deformed, ugly, bad anatomy, bad proportions, watermark, signature, text, logo, jpeg artifacts, compression artifacts, low resolution, worst quality, normal quality, amateur, beginner, grainy, out of focus, poorly drawn";
 
 // Image generation limits
 const MIN_IMAGE_DIMENSION = 64;
