@@ -7,111 +7,102 @@ const PORT = process.env.PORT || 3001;
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json({ limit: "50mb" }));
 
-// Proxy endpoint for AI model requests to avoid CORS issues
+// Proxy endpoint for ModelsLab text-to-image API
 app.post("/api/generate", async (req, res) => {
-  const { apiKey, provider, prompt, image, model } = req.body;
+  const { apiKey, prompt, negativePrompt, model, width, height, samples, steps, guidanceScale, enhancePrompt } = req.body;
 
-  if (!apiKey || !provider || !prompt) {
-    return res.status(400).json({ error: "Missing required fields" });
+  if (!apiKey || !prompt) {
+    return res.status(400).json({ error: "Missing required fields: apiKey and prompt are required" });
   }
 
   try {
-    let result;
-    if (provider === "openai") {
-      result = await callOpenAI(apiKey, prompt, image, model);
-    } else if (provider === "stability") {
-      result = await callStability(apiKey, prompt, image);
-    } else {
-      return res.status(400).json({ error: "Unsupported provider" });
+    const body = {
+      key: apiKey,
+      model_id: model || "flux",
+      prompt: prompt,
+      negative_prompt: negativePrompt || "",
+      width: width || "512",
+      height: height || "512",
+      samples: samples || "1",
+      num_inference_steps: steps || "30",
+      guidance_scale: guidanceScale || 7.5,
+      safety_checker: "no",
+      enhance_prompt: enhancePrompt ? "yes" : "no",
+      seed: null,
+      webhook: null,
+      track_id: null,
+    };
+
+    const response = await fetch("https://modelslab.com/api/v6/images/text2img", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (data.status === "error") {
+      throw new Error(data.message || "ModelsLab API error");
     }
-    res.json(result);
+
+    // If processing, return the fetch URL so client can poll
+    if (data.status === "processing") {
+      return res.json({
+        status: "processing",
+        fetchUrl: data.fetch_result || null,
+        id: data.id,
+        eta: data.eta,
+      });
+    }
+
+    // Success - return image URLs
+    res.json({
+      status: "success",
+      images: data.output || [],
+      generationTime: data.generationTime,
+      meta: data.meta || {},
+    });
   } catch (err) {
     console.error("API Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-async function callOpenAI(apiKey, prompt, imageBase64, model) {
-  const messages = [
-    {
-      role: "user",
-      content: [],
-    },
-  ];
+// Poll endpoint for processing images
+app.post("/api/fetch", async (req, res) => {
+  const { apiKey, id } = req.body;
 
-  if (imageBase64) {
-    messages[0].content.push({
-      type: "image_url",
-      image_url: { url: imageBase64 },
-    });
+  if (!apiKey || !id) {
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
-  messages[0].content.push({ type: "text", text: prompt });
-
-  // Use DALL-E for image generation/editing
-  const body = {
-    model: model || "dall-e-3",
-    prompt: prompt,
-    n: 1,
-    size: "1024x1024",
-    response_format: "b64_json",
-  };
-
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      errData.error?.message || `OpenAI API error: ${response.status}`
-    );
-  }
-
-  const data = await response.json();
-  const b64 = data.data[0].b64_json;
-  return { image: `data:image/png;base64,${b64}` };
-}
-
-async function callStability(apiKey, prompt, imageBase64) {
-  const body = {
-    text_prompts: [{ text: prompt, weight: 1 }],
-    cfg_scale: 7,
-    samples: 1,
-    steps: 30,
-  };
-
-  const engine = "stable-diffusion-xl-1024-v1-0";
-  const response = await fetch(
-    `https://api.stability.ai/v1/generation/${engine}/text-to-image`,
-    {
+  try {
+    const response = await fetch("https://modelslab.com/api/v6/images/fetch/" + id, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: apiKey }),
+    });
+
+    const data = await response.json();
+
+    if (data.status === "error") {
+      throw new Error(data.message || "Fetch failed");
     }
-  );
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(
-      errData.message || `Stability API error: ${response.status}`
-    );
+    if (data.status === "processing") {
+      return res.json({ status: "processing", eta: data.eta });
+    }
+
+    res.json({
+      status: "success",
+      images: data.output || [],
+    });
+  } catch (err) {
+    console.error("Fetch Error:", err.message);
+    res.status(500).json({ error: err.message });
   }
-
-  const data = await response.json();
-  const b64 = data.artifacts[0].base64;
-  return { image: `data:image/png;base64,${b64}` };
-}
+});
 
 app.listen(PORT, () => {
-  console.log(`Image Editor running at http://localhost:${PORT}`);
+  console.log(`Text to Image Generator running at http://localhost:${PORT}`);
 });

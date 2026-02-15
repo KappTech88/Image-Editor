@@ -1,7 +1,7 @@
 {
-  "name": "image-editor",
+  "name": "text-to-image-generator",
   "version": "1.0.0",
-  "description": "A simple image editor with AI model integration for prompt-based image editing",
+  "description": "A simple text-to-image generator powered by ModelsLab API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
