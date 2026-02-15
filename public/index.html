@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Text to Image Generator</title>
+  <title>Image Editor - Text to Image &amp; Image to Image</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <!-- Header -->
     <header class="header">
-      <h1>Text to Image Generator</h1>
+      <h1>Image Editor</h1>
       <span class="header-badge">Powered by ModelsLab</span>
     </header>
 
@@ -25,19 +25,86 @@
           </label>
         </div>
 
+        <!-- Mode Toggle -->
+        <div class="panel-section">
+          <h3>Mode</h3>
+          <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="text2img">Text to Image</button>
+            <button class="mode-btn" data-mode="img2img">Image to Image</button>
+          </div>
+        </div>
+
         <div class="panel-section">
           <h3>Model</h3>
           <label>
             Model ID
             <select id="model-select">
-              <option value="flux">Flux</option>
-              <option value="sd-1.5">Stable Diffusion 1.5</option>
-              <option value="sdxl">Stable Diffusion XL</option>
-              <option value="realistic-vision-v51">Realistic Vision v5.1</option>
-              <option value="dreamshaper-v8">DreamShaper v8</option>
-              <option value="midjourney">Midjourney</option>
+              <optgroup label="Flux Models">
+                <option value="flux" selected>Flux</option>
+                <option value="flux-dev">Flux Dev</option>
+                <option value="flux-schnell">Flux Schnell</option>
+              </optgroup>
+              <optgroup label="Stable Diffusion">
+                <option value="sd3.5-large">SD 3.5 Large</option>
+                <option value="sd3.5-medium">SD 3.5 Medium</option>
+                <option value="sd3-medium">SD 3 Medium</option>
+                <option value="sdxl">Stable Diffusion XL</option>
+                <option value="sd-1.5">Stable Diffusion 1.5</option>
+              </optgroup>
+              <optgroup label="Realistic">
+                <option value="realistic-vision-v51">Realistic Vision v5.1</option>
+                <option value="realistic-vision-v60">Realistic Vision v6.0</option>
+                <option value="realvis-xl">RealVis XL</option>
+                <option value="juggernaut-xl">Juggernaut XL</option>
+                <option value="cyberrealistic-v42">CyberRealistic v4.2</option>
+              </optgroup>
+              <optgroup label="Artistic / Creative">
+                <option value="dreamshaper-v8">DreamShaper v8</option>
+                <option value="dreamshaper-xl">DreamShaper XL</option>
+                <option value="midjourney">Midjourney</option>
+                <option value="openjourney">Openjourney</option>
+                <option value="playground-v2.5">Playground v2.5</option>
+                <option value="animagine-xl-3.1">Animagine XL 3.1</option>
+                <option value="proteus-v0.4">Proteus v0.4</option>
+                <option value="kandinsky-2.2">Kandinsky 2.2</option>
+                <option value="dall-e">DALL-E</option>
+              </optgroup>
+              <optgroup label="Specialized">
+                <option value="ghostmix">GhostMix</option>
+                <option value="absolute-reality-v1.8.1">Absolute Reality v1.8.1</option>
+                <option value="anything-v5">Anything v5</option>
+                <option value="rev-animated">ReV Animated</option>
+                <option value="epic-realism">Epic Realism</option>
+              </optgroup>
             </select>
           </label>
+        </div>
+
+        <!-- Init Image Section (img2img only) -->
+        <div class="panel-section img2img-only" id="init-image-section" style="display: none;">
+          <h3>Init Image</h3>
+          <label>
+            Image URL
+            <input type="text" id="init-image-url" placeholder="Paste image URL here..." />
+          </label>
+          <div class="upload-divider">or</div>
+          <div class="upload-area" id="upload-area">
+            <input type="file" id="init-image-file" accept="image/png,image/jpeg,image/webp" hidden />
+            <div class="upload-placeholder" id="upload-placeholder">
+              <span class="upload-icon">+</span>
+              <span>Click or drag image here</span>
+            </div>
+            <div class="upload-preview" id="upload-preview" style="display: none;">
+              <img id="preview-img" alt="Init image preview" />
+              <button class="remove-image-btn" id="remove-image" title="Remove image">x</button>
+            </div>
+          </div>
+          <label>
+            Strength
+            <input type="range" id="strength" min="0.1" max="1.0" value="0.7" step="0.05" />
+            <span id="strength-val">0.7</span>
+          </label>
+          <span class="hint">Lower = closer to original, Higher = more creative</span>
         </div>
 
         <div class="panel-section">

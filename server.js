@@ -24,6 +24,8 @@ const MIN_STEPS = 10;
 const MAX_STEPS = 100;
 const MIN_GUIDANCE_SCALE = 1;
 const MAX_GUIDANCE_SCALE = 20;
+const MIN_STRENGTH = 0.1;
+const MAX_STRENGTH = 1.0;
 
 // Security middleware
 app.use(
@@ -51,14 +53,14 @@ const limiter = rateLimit({
 
 app.use("/api/", limiter);
 
-// Body parser with size limit
-app.use(express.json({ limit: "10mb" }));
+// Body parser with size limit (increased to support base64 image uploads)
+app.use(express.json({ limit: "20mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 /**
- * Validation middleware for generate endpoint
+ * Shared validation rules for both text2img and img2img
  */
-const validateGenerate = [
+const sharedValidation = [
   body("apiKey").trim().notEmpty().withMessage("API key is required"),
   body("prompt")
     .trim()
@@ -93,6 +95,26 @@ const validateGenerate = [
     .isFloat({ min: MIN_GUIDANCE_SCALE, max: MAX_GUIDANCE_SCALE })
     .withMessage(`Guidance scale must be between ${MIN_GUIDANCE_SCALE} and ${MAX_GUIDANCE_SCALE}`),
   body("enhancePrompt").optional().isBoolean(),
+];
+
+/**
+ * Validation middleware for generate endpoint (text2img)
+ */
+const validateGenerate = [...sharedValidation];
+
+/**
+ * Validation middleware for img2img endpoint
+ */
+const validateImg2Img = [
+  ...sharedValidation,
+  body("initImage")
+    .trim()
+    .notEmpty()
+    .withMessage("Init image URL is required for image-to-image"),
+  body("strength")
+    .optional()
+    .isFloat({ min: MIN_STRENGTH, max: MAX_STRENGTH })
+    .withMessage(`Strength must be between ${MIN_STRENGTH} and ${MAX_STRENGTH}`),
 ];
 
 /**
@@ -170,6 +192,86 @@ app.post("/api/generate", validateGenerate, async (req, res) => {
       return res.status(408).json({ error: "Request timeout" });
     }
     res.status(500).json({ error: "Failed to generate image. Please check your API key and try again." });
+  }
+});
+
+/**
+ * Proxy endpoint for ModelsLab image-to-image API
+ */
+app.post("/api/img2img", validateImg2Img, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
+  const {
+    apiKey, prompt, negativePrompt, model, width, height,
+    samples, steps, guidanceScale, enhancePrompt, initImage, strength,
+  } = req.body;
+
+  try {
+    const body = {
+      key: apiKey,
+      model_id: model || "flux",
+      prompt: prompt,
+      negative_prompt: negativePrompt || "",
+      init_image: initImage,
+      width: width || "512",
+      height: height || "512",
+      samples: samples || "1",
+      num_inference_steps: steps || "30",
+      guidance_scale: guidanceScale || 7.5,
+      strength: strength || 0.7,
+      safety_checker: "no",
+      enhance_prompt: enhancePrompt ? "yes" : "no",
+      seed: null,
+      webhook: null,
+      track_id: null,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+    const response = await fetch(`${API_BASE_URL}/images/img2img`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.status === "error") {
+      throw new Error(data.message || "ModelsLab API error");
+    }
+
+    if (data.status === "processing") {
+      return res.json({
+        status: "processing",
+        fetchUrl: data.fetch_result || null,
+        id: data.id,
+        eta: data.eta,
+      });
+    }
+
+    res.json({
+      status: "success",
+      images: data.output || [],
+      generationTime: data.generationTime,
+      meta: data.meta || {},
+    });
+  } catch (err) {
+    console.error("Img2Img API Error:", err.message);
+    if (err.name === "AbortError") {
+      return res.status(408).json({ error: "Request timeout" });
+    }
+    res.status(500).json({ error: "Failed to transform image. Please check your API key and try again." });
   }
 });
 
@@ -256,6 +358,6 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Text to Image Generator running at http://localhost:${PORT}`);
+  console.log(`Image Editor running at http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
