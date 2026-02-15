@@ -335,3 +335,13 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Image error state */
+.image-error {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--danger);
+  font-size: 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+}
