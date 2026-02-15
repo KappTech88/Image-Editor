@@ -8,12 +8,22 @@ const { body, validationResult } = require("express-validator");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// API key from environment (locked in server-side)
+const API_KEY = process.env.MODELSLAB_API_KEY;
+if (!API_KEY) {
+  console.error("MODELSLAB_API_KEY is not set in .env file");
+  process.exit(1);
+}
+
 // Constants
-const API_BASE_URL = "https://modelslab.com/api/v6";
+const API_V6_BASE = "https://modelslab.com/api/v6";
+const API_V7_BASE = "https://modelslab.com/api/v7";
 const FETCH_TIMEOUT = 30000; // 30 seconds
-const MAX_POLL_ATTEMPTS = 30;
-const POLL_INTERVAL = 3000; // 3 seconds
-const MAX_PROMPT_LENGTH = 1000; // Maximum characters for prompts
+const MAX_PROMPT_LENGTH = 1000;
+
+// Hardcoded model IDs (no user selection)
+const TEXT2IMG_MODEL = "flux";
+const IMG2IMG_MODEL = "grok-imagine-image-121";
 
 // Image generation limits
 const MIN_IMAGE_DIMENSION = 64;
@@ -26,6 +36,10 @@ const MIN_GUIDANCE_SCALE = 1;
 const MAX_GUIDANCE_SCALE = 20;
 const MIN_STRENGTH = 0.1;
 const MAX_STRENGTH = 1.0;
+
+// Valid aspect ratios and resolutions for Grok Imagine img2img
+const VALID_ASPECT_RATIOS = ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3"];
+const VALID_RESOLUTIONS = ["1k", "2k"];
 
 // Security middleware
 app.use(
@@ -44,8 +58,8 @@ app.use(
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -53,15 +67,14 @@ const limiter = rateLimit({
 
 app.use("/api/", limiter);
 
-// Body parser with size limit (increased to support base64 image uploads)
+// Body parser with size limit
 app.use(express.json({ limit: "20mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 /**
- * Shared validation rules for both text2img and img2img
+ * Validation for text2img endpoint
  */
-const sharedValidation = [
-  body("apiKey").trim().notEmpty().withMessage("API key is required"),
+const validateGenerate = [
   body("prompt")
     .trim()
     .notEmpty()
@@ -73,7 +86,6 @@ const sharedValidation = [
     .trim()
     .isLength({ max: MAX_PROMPT_LENGTH })
     .withMessage("Negative prompt too long"),
-  body("model").optional().trim(),
   body("width")
     .optional()
     .isInt({ min: MIN_IMAGE_DIMENSION, max: MAX_IMAGE_DIMENSION })
@@ -98,19 +110,27 @@ const sharedValidation = [
 ];
 
 /**
- * Validation middleware for generate endpoint (text2img)
- */
-const validateGenerate = [...sharedValidation];
-
-/**
- * Validation middleware for img2img endpoint
+ * Validation for img2img endpoint (Grok Imagine v7)
  */
 const validateImg2Img = [
-  ...sharedValidation,
+  body("prompt")
+    .trim()
+    .notEmpty()
+    .withMessage("Prompt is required")
+    .isLength({ max: MAX_PROMPT_LENGTH })
+    .withMessage("Prompt too long"),
   body("initImage")
     .trim()
     .notEmpty()
     .withMessage("Init image URL is required for image-to-image"),
+  body("aspectRatio")
+    .optional()
+    .isIn(VALID_ASPECT_RATIOS)
+    .withMessage(`Aspect ratio must be one of: ${VALID_ASPECT_RATIOS.join(", ")}`),
+  body("resolution")
+    .optional()
+    .isIn(VALID_RESOLUTIONS)
+    .withMessage(`Resolution must be one of: ${VALID_RESOLUTIONS.join(", ")}`),
   body("strength")
     .optional()
     .isFloat({ min: MIN_STRENGTH, max: MAX_STRENGTH })
@@ -118,21 +138,20 @@ const validateImg2Img = [
 ];
 
 /**
- * Proxy endpoint for ModelsLab text-to-image API
+ * Proxy endpoint for ModelsLab text-to-image API (v6)
  */
 app.post("/api/generate", validateGenerate, async (req, res) => {
-  // Validate request
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ error: errors.array()[0].msg });
   }
 
-  const { apiKey, prompt, negativePrompt, model, width, height, samples, steps, guidanceScale, enhancePrompt } = req.body;
+  const { prompt, negativePrompt, width, height, samples, steps, guidanceScale, enhancePrompt } = req.body;
 
   try {
     const body = {
-      key: apiKey,
-      model_id: model || "flux",
+      key: API_KEY,
+      model_id: TEXT2IMG_MODEL,
       prompt: prompt,
       negative_prompt: negativePrompt || "",
       width: width || "512",
@@ -150,7 +169,7 @@ app.post("/api/generate", validateGenerate, async (req, res) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-    const response = await fetch(`${API_BASE_URL}/images/text2img`, {
+    const response = await fetch(`${API_V6_BASE}/images/text2img`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -169,7 +188,6 @@ app.post("/api/generate", validateGenerate, async (req, res) => {
       throw new Error(data.message || "ModelsLab API error");
     }
 
-    // If processing, return the fetch URL so client can poll
     if (data.status === "processing") {
       return res.json({
         status: "processing",
@@ -179,7 +197,6 @@ app.post("/api/generate", validateGenerate, async (req, res) => {
       });
     }
 
-    // Success - return image URLs
     res.json({
       status: "success",
       images: data.output || [],
@@ -187,16 +204,16 @@ app.post("/api/generate", validateGenerate, async (req, res) => {
       meta: data.meta || {},
     });
   } catch (err) {
-    console.error("API Error:", err.message);
+    console.error("Text2Img API Error:", err.message);
     if (err.name === "AbortError") {
       return res.status(408).json({ error: "Request timeout" });
     }
-    res.status(500).json({ error: "Failed to generate image. Please check your API key and try again." });
+    res.status(500).json({ error: "Failed to generate image. Please try again." });
   }
 });
 
 /**
- * Proxy endpoint for ModelsLab image-to-image API
+ * Proxy endpoint for ModelsLab Grok Imagine image-to-image API (v7)
  */
 app.post("/api/img2img", validateImg2Img, async (req, res) => {
   const errors = validationResult(req);
@@ -204,35 +221,23 @@ app.post("/api/img2img", validateImg2Img, async (req, res) => {
     return res.status(400).json({ error: errors.array()[0].msg });
   }
 
-  const {
-    apiKey, prompt, negativePrompt, model, width, height,
-    samples, steps, guidanceScale, enhancePrompt, initImage, strength,
-  } = req.body;
+  const { prompt, initImage, aspectRatio, resolution, strength } = req.body;
 
   try {
     const body = {
-      key: apiKey,
-      model_id: model || "flux",
+      key: API_KEY,
+      model_id: IMG2IMG_MODEL,
       prompt: prompt,
-      negative_prompt: negativePrompt || "",
-      init_image: initImage,
-      width: width || "512",
-      height: height || "512",
-      samples: samples || "1",
-      num_inference_steps: steps || "30",
-      guidance_scale: guidanceScale || 7.5,
+      init_image: [initImage],
+      aspect_ratio: aspectRatio || "1:1",
+      resolution: resolution || "2k",
       strength: strength || 0.7,
-      safety_checker: "no",
-      enhance_prompt: enhancePrompt ? "yes" : "no",
-      seed: null,
-      webhook: null,
-      track_id: null,
     };
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-    const response = await fetch(`${API_BASE_URL}/images/img2img`, {
+    const response = await fetch(`${API_V7_BASE}/images/image-to-image`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -271,38 +276,33 @@ app.post("/api/img2img", validateImg2Img, async (req, res) => {
     if (err.name === "AbortError") {
       return res.status(408).json({ error: "Request timeout" });
     }
-    res.status(500).json({ error: "Failed to transform image. Please check your API key and try again." });
+    res.status(500).json({ error: "Failed to transform image. Please try again." });
   }
 });
 
 /**
- * Validation middleware for fetch endpoint
+ * Poll endpoint for processing images
  */
 const validateFetch = [
-  body("apiKey").trim().notEmpty().withMessage("API key is required"),
   body("id").trim().notEmpty().withMessage("ID is required"),
 ];
 
-/**
- * Poll endpoint for processing images
- */
 app.post("/api/fetch", validateFetch, async (req, res) => {
-  // Validate request
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ error: errors.array()[0].msg });
   }
 
-  const { apiKey, id } = req.body;
+  const { id } = req.body;
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-    const response = await fetch(`${API_BASE_URL}/images/fetch/${id}`, {
+    const response = await fetch(`${API_V6_BASE}/images/fetch/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: apiKey }),
+      body: JSON.stringify({ key: API_KEY }),
       signal: controller.signal,
     });
 

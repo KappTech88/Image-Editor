@@ -3,16 +3,14 @@
 
   // Constants
   const MAX_POLL_ATTEMPTS = 30;
-  const POLL_INTERVAL = 3000; // 3 seconds
+  const POLL_INTERVAL = 3000;
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   // --- State ---
   var currentMode = "text2img";
-  var uploadedImageUrl = null; // Stores the URL from file upload (data URL) or pasted URL
+  var uploadedImageUrl = null;
 
   // --- DOM Elements ---
-  var apiKeyInput = document.getElementById("api-key");
-  var modelSelect = document.getElementById("model-select");
   var imgWidth = document.getElementById("img-width");
   var imgHeight = document.getElementById("img-height");
   var samplesSelect = document.getElementById("samples");
@@ -23,12 +21,17 @@
   var enhancePromptCheckbox = document.getElementById("enhance-prompt");
   var promptInput = document.getElementById("prompt");
   var negativePromptInput = document.getElementById("negative-prompt");
+  var negativePromptSection = document.getElementById("negative-prompt-section");
   var btnGenerate = document.getElementById("btn-generate");
   var statusEl = document.getElementById("status");
   var imageGrid = document.getElementById("image-grid");
 
   // Mode toggle elements
   var modeBtns = document.querySelectorAll(".mode-btn");
+
+  // Text2img-only sections
+  var dimensionsSection = document.getElementById("dimensions-section");
+  var genSettingsSection = document.getElementById("gen-settings-section");
 
   // Image-to-image elements
   var initImageSection = document.getElementById("init-image-section");
@@ -41,6 +44,8 @@
   var removeImageBtn = document.getElementById("remove-image");
   var strengthInput = document.getElementById("strength");
   var strengthVal = document.getElementById("strength-val");
+  var aspectRatioSelect = document.getElementById("aspect-ratio");
+  var resolutionSelect = document.getElementById("resolution");
 
   // --- Slider updates ---
   stepsInput.addEventListener("input", function () {
@@ -56,44 +61,54 @@
   });
 
   // --- Mode toggle ---
+  function setMode(mode) {
+    currentMode = mode;
+    modeBtns.forEach(function (b) {
+      if (b.getAttribute("data-mode") === mode) {
+        b.classList.add("active");
+      } else {
+        b.classList.remove("active");
+      }
+    });
+
+    if (mode === "img2img") {
+      initImageSection.style.display = "";
+      dimensionsSection.style.display = "none";
+      genSettingsSection.style.display = "none";
+      negativePromptSection.style.display = "none";
+      btnGenerate.textContent = "Transform Image";
+      promptInput.placeholder = "Describe how you want the image to be transformed...";
+    } else {
+      initImageSection.style.display = "none";
+      dimensionsSection.style.display = "";
+      genSettingsSection.style.display = "";
+      negativePromptSection.style.display = "";
+      btnGenerate.textContent = "Generate Image";
+      promptInput.placeholder = "Describe the image you want to generate...";
+    }
+  }
+
   modeBtns.forEach(function (btn) {
     btn.addEventListener("click", function () {
       var mode = btn.getAttribute("data-mode");
       if (mode === currentMode) return;
-
-      currentMode = mode;
-      modeBtns.forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-
-      // Toggle img2img-specific UI
-      if (mode === "img2img") {
-        initImageSection.style.display = "";
-        btnGenerate.textContent = "Transform Image";
-        promptInput.placeholder = "Describe how you want the image to be transformed...";
-      } else {
-        initImageSection.style.display = "none";
-        btnGenerate.textContent = "Generate Image";
-        promptInput.placeholder = "Describe the image you want to generate...";
-      }
+      setMode(mode);
     });
   });
 
   // --- Image upload handling ---
 
-  // Click to upload
   uploadArea.addEventListener("click", function (e) {
     if (e.target === removeImageBtn || removeImageBtn.contains(e.target)) return;
     initImageFileInput.click();
   });
 
-  // File selected
   initImageFileInput.addEventListener("change", function () {
     if (initImageFileInput.files && initImageFileInput.files[0]) {
       handleFileUpload(initImageFileInput.files[0]);
     }
   });
 
-  // Drag and drop
   uploadArea.addEventListener("dragover", function (e) {
     e.preventDefault();
     uploadArea.classList.add("drag-over");
@@ -111,17 +126,15 @@
     }
   });
 
-  // Remove image
   removeImageBtn.addEventListener("click", function (e) {
     e.stopPropagation();
     clearUploadedImage();
   });
 
-  // URL input - update preview when URL is pasted
   initImageUrlInput.addEventListener("change", function () {
     var url = initImageUrlInput.value.trim();
     if (url) {
-      uploadedImageUrl = null; // Clear file upload, use URL directly
+      uploadedImageUrl = null;
       previewImg.src = url;
       uploadPlaceholder.style.display = "none";
       uploadPreview.style.display = "";
@@ -140,11 +153,11 @@
 
     var reader = new FileReader();
     reader.onload = function (e) {
-      uploadedImageUrl = e.target.result; // base64 data URL
+      uploadedImageUrl = e.target.result;
       previewImg.src = uploadedImageUrl;
       uploadPlaceholder.style.display = "none";
       uploadPreview.style.display = "";
-      initImageUrlInput.value = ""; // Clear URL input when file is uploaded
+      initImageUrlInput.value = "";
     };
     reader.readAsDataURL(file);
   }
@@ -164,7 +177,7 @@
   }
 
   // --- Poll for results ---
-  async function pollForResults(apiKey, id, maxAttempts) {
+  async function pollForResults(id, maxAttempts) {
     var attempts = maxAttempts || MAX_POLL_ATTEMPTS;
     for (var i = 0; i < attempts; i++) {
       await new Promise(function (resolve) { setTimeout(resolve, POLL_INTERVAL); });
@@ -175,7 +188,7 @@
         var response = await fetch("/api/fetch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ apiKey: apiKey, id: id }),
+          body: JSON.stringify({ id: id }),
         });
 
         if (!response.ok) {
@@ -242,18 +255,7 @@
       useInitBtn.className = "use-init-btn";
       useInitBtn.textContent = "Use as Init";
       useInitBtn.addEventListener("click", function () {
-        // Switch to img2img mode
-        currentMode = "img2img";
-        modeBtns.forEach(function (b) {
-          if (b.getAttribute("data-mode") === "img2img") {
-            b.classList.add("active");
-          } else {
-            b.classList.remove("active");
-          }
-        });
-        initImageSection.style.display = "";
-        btnGenerate.textContent = "Transform Image";
-        promptInput.placeholder = "Describe how you want the image to be transformed...";
+        setMode("img2img");
 
         // Set the image URL
         initImageUrlInput.value = url;
@@ -262,9 +264,7 @@
         uploadPlaceholder.style.display = "none";
         uploadPreview.style.display = "";
 
-        // Scroll settings panel to show init image section
         initImageSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
         setStatus("Image set as init image. Adjust prompt and strength, then click Transform.", "success");
       });
 
@@ -277,7 +277,7 @@
     });
   }
 
-  // --- Get the init image value (URL or uploaded data URL) ---
+  // --- Get the init image value ---
   function getInitImage() {
     var urlValue = initImageUrlInput.value.trim();
     if (urlValue) return urlValue;
@@ -287,15 +287,8 @@
 
   // --- Generate ---
   btnGenerate.addEventListener("click", async function () {
-    var apiKey = apiKeyInput.value.trim();
     var prompt = promptInput.value.trim();
 
-    // Validation
-    if (!apiKey) {
-      setStatus("Please enter your ModelsLab API key.", "error");
-      apiKeyInput.focus();
-      return;
-    }
     if (!prompt) {
       setStatus("Please enter a prompt.", "error");
       promptInput.focus();
@@ -316,25 +309,30 @@
     btnGenerate.disabled = true;
 
     try {
-      var requestBody = {
-        apiKey: apiKey,
-        prompt: prompt,
-        negativePrompt: negativePromptInput.value.trim(),
-        model: modelSelect.value,
-        width: imgWidth.value,
-        height: imgHeight.value,
-        samples: samplesSelect.value,
-        steps: stepsInput.value,
-        guidanceScale: parseFloat(guidanceInput.value),
-        enhancePrompt: enhancePromptCheckbox.checked,
-      };
-
-      var endpoint = "/api/generate";
+      var requestBody;
+      var endpoint;
 
       if (currentMode === "img2img") {
-        requestBody.initImage = getInitImage();
-        requestBody.strength = parseFloat(strengthInput.value);
+        requestBody = {
+          prompt: prompt,
+          initImage: getInitImage(),
+          aspectRatio: aspectRatioSelect.value,
+          resolution: resolutionSelect.value,
+          strength: parseFloat(strengthInput.value),
+        };
         endpoint = "/api/img2img";
+      } else {
+        requestBody = {
+          prompt: prompt,
+          negativePrompt: negativePromptInput.value.trim(),
+          width: imgWidth.value,
+          height: imgHeight.value,
+          samples: samplesSelect.value,
+          steps: stepsInput.value,
+          guidanceScale: parseFloat(guidanceInput.value),
+          enhancePrompt: enhancePromptCheckbox.checked,
+        };
+        endpoint = "/api/generate";
       }
 
       var response = await fetch(endpoint, {
@@ -353,7 +351,7 @@
 
       if (data.status === "processing") {
         setStatus('<span class="spinner"></span> Image queued, polling for results...', "");
-        images = await pollForResults(apiKey, data.id);
+        images = await pollForResults(data.id);
       } else if (data.status === "success") {
         images = data.images;
       } else {
