@@ -9,7 +9,10 @@ app.use(express.json({ limit: "50mb" }));
 
 // Proxy endpoint for ModelsLab text-to-image API
 app.post("/api/generate", async (req, res) => {
-  const { apiKey, prompt, negativePrompt, model, width, height, samples, steps, guidanceScale, enhancePrompt } = req.body;
+  const {
+    apiKey, prompt, negativePrompt, model,
+    width, height, samples, steps, guidanceScale, enhancePrompt,
+  } = req.body;
 
   if (!apiKey || !prompt) {
     return res.status(400).json({ error: "Missing required fields: apiKey and prompt are required" });
@@ -45,7 +48,6 @@ app.post("/api/generate", async (req, res) => {
       throw new Error(data.message || "ModelsLab API error");
     }
 
-    // If processing, return the fetch URL so client can poll
     if (data.status === "processing") {
       return res.json({
         status: "processing",
@@ -55,7 +57,6 @@ app.post("/api/generate", async (req, res) => {
       });
     }
 
-    // Success - return image URLs
     res.json({
       status: "success",
       images: data.output || [],
@@ -63,7 +64,74 @@ app.post("/api/generate", async (req, res) => {
       meta: data.meta || {},
     });
   } catch (err) {
-    console.error("API Error:", err.message);
+    console.error("Text2Img API Error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Proxy endpoint for ModelsLab image-to-image API
+app.post("/api/img2img", async (req, res) => {
+  const {
+    apiKey, prompt, negativePrompt, model,
+    initImage, strength, width, height,
+    samples, steps, guidanceScale, enhancePrompt,
+  } = req.body;
+
+  if (!apiKey || !prompt || !initImage) {
+    return res.status(400).json({
+      error: "Missing required fields: apiKey, prompt, and initImage are required",
+    });
+  }
+
+  try {
+    const body = {
+      key: apiKey,
+      model_id: model || "flux",
+      prompt: prompt,
+      negative_prompt: negativePrompt || "",
+      init_image: initImage,
+      strength: strength || 0.7,
+      width: width || "512",
+      height: height || "512",
+      samples: samples || "1",
+      num_inference_steps: steps || "30",
+      guidance_scale: guidanceScale || 7.5,
+      safety_checker: "no",
+      enhance_prompt: enhancePrompt ? "yes" : "no",
+      seed: null,
+      webhook: null,
+      track_id: null,
+    };
+
+    const response = await fetch("https://modelslab.com/api/v6/images/img2img", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (data.status === "error") {
+      throw new Error(data.message || "ModelsLab API error");
+    }
+
+    if (data.status === "processing") {
+      return res.json({
+        status: "processing",
+        fetchUrl: data.fetch_result || null,
+        id: data.id,
+        eta: data.eta,
+      });
+    }
+
+    res.json({
+      status: "success",
+      images: data.output || [],
+      generationTime: data.generationTime,
+      meta: data.meta || {},
+    });
+  } catch (err) {
+    console.error("Img2Img API Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -104,5 +172,5 @@ app.post("/api/fetch", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Text to Image Generator running at http://localhost:${PORT}`);
+  console.log(`AI Image Editor running at http://localhost:${PORT}`);
 });
