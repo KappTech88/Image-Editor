@@ -68,7 +68,7 @@ body {
 
 /* Settings panel */
 .settings-panel {
-  width: 240px;
+  width: 260px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   padding: 16px;
@@ -96,7 +96,8 @@ body {
 }
 
 .panel-section select,
-.panel-section input[type="password"] {
+.panel-section input[type="password"],
+.panel-section input[type="text"] {
   width: 100%;
   padding: 8px 10px;
   background: var(--bg-tertiary);
@@ -111,6 +112,18 @@ body {
 .panel-section input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.panel-section select optgroup {
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.panel-section select option {
+  font-weight: normal;
+  color: var(--text-primary);
+  padding: 4px 8px;
 }
 
 .panel-section input[type="range"] {
@@ -138,6 +151,119 @@ body {
   accent-color: var(--accent);
   width: 16px;
   height: 16px;
+}
+
+/* Mode Toggle */
+.mode-toggle {
+  display: flex;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-family: inherit;
+}
+
+.mode-btn:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mode-btn:hover:not(.active) {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+/* Upload area */
+.upload-divider {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 4px 0;
+}
+
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s;
+  overflow: hidden;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+  border-color: var(--accent);
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.upload-icon {
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.upload-preview {
+  position: relative;
+}
+
+.upload-preview img {
+  width: 100%;
+  display: block;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(224, 85, 85, 0.9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.remove-image-btn:hover {
+  background: var(--danger);
+}
+
+.hint {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 /* Content area */
@@ -270,7 +396,8 @@ body {
 }
 
 .download-btn,
-.open-btn {
+.open-btn,
+.use-init-btn {
   flex: 1;
   text-align: center;
   padding: 6px 12px;
@@ -280,6 +407,8 @@ body {
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s;
+  border: none;
+  font-family: inherit;
 }
 
 .download-btn {
@@ -299,6 +428,15 @@ body {
 
 .open-btn:hover {
   background: var(--border);
+}
+
+.use-init-btn {
+  background: var(--success);
+  color: #fff;
+}
+
+.use-init-btn:hover {
+  background: #48a868;
 }
 
 /* Scrollbar */
