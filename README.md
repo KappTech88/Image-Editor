@@ -23,7 +23,7 @@ This application includes several security enhancements:
 
 ## Prerequisites
 
-- Node.js 14+ 
+- Node.js 18+ (LTS version recommended)
 - ModelsLab API key ([Get one here](https://modelslab.com))
 
 ## Installation

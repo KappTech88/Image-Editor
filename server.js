@@ -13,6 +13,7 @@ const API_BASE_URL = "https://modelslab.com/api/v6";
 const FETCH_TIMEOUT = 30000; // 30 seconds
 const MAX_POLL_ATTEMPTS = 30;
 const POLL_INTERVAL = 3000; // 3 seconds
+const MAX_PROMPT_LENGTH = 1000; // Maximum characters for prompts
 
 // Security middleware
 app.use(
@@ -49,8 +50,17 @@ app.use(express.static(path.join(__dirname, "public")));
  */
 const validateGenerate = [
   body("apiKey").trim().notEmpty().withMessage("API key is required"),
-  body("prompt").trim().notEmpty().withMessage("Prompt is required").isLength({ max: 1000 }).withMessage("Prompt too long"),
-  body("negativePrompt").optional().trim().isLength({ max: 1000 }).withMessage("Negative prompt too long"),
+  body("prompt")
+    .trim()
+    .notEmpty()
+    .withMessage("Prompt is required")
+    .isLength({ max: MAX_PROMPT_LENGTH })
+    .withMessage("Prompt too long"),
+  body("negativePrompt")
+    .optional()
+    .trim()
+    .isLength({ max: MAX_PROMPT_LENGTH })
+    .withMessage("Negative prompt too long"),
   body("model").optional().trim(),
   body("width").optional().isInt({ min: 64, max: 2048 }).withMessage("Width must be between 64 and 2048"),
   body("height").optional().isInt({ min: 64, max: 2048 }).withMessage("Height must be between 64 and 2048"),
