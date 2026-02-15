@@ -15,6 +15,16 @@ const MAX_POLL_ATTEMPTS = 30;
 const POLL_INTERVAL = 3000; // 3 seconds
 const MAX_PROMPT_LENGTH = 1000; // Maximum characters for prompts
 
+// Image generation limits
+const MIN_IMAGE_DIMENSION = 64;
+const MAX_IMAGE_DIMENSION = 2048;
+const MIN_SAMPLES = 1;
+const MAX_SAMPLES = 4;
+const MIN_STEPS = 10;
+const MAX_STEPS = 100;
+const MIN_GUIDANCE_SCALE = 1;
+const MAX_GUIDANCE_SCALE = 20;
+
 // Security middleware
 app.use(
   helmet({
@@ -62,11 +72,26 @@ const validateGenerate = [
     .isLength({ max: MAX_PROMPT_LENGTH })
     .withMessage("Negative prompt too long"),
   body("model").optional().trim(),
-  body("width").optional().isInt({ min: 64, max: 2048 }).withMessage("Width must be between 64 and 2048"),
-  body("height").optional().isInt({ min: 64, max: 2048 }).withMessage("Height must be between 64 and 2048"),
-  body("samples").optional().isInt({ min: 1, max: 4 }).withMessage("Samples must be between 1 and 4"),
-  body("steps").optional().isInt({ min: 10, max: 100 }).withMessage("Steps must be between 10 and 100"),
-  body("guidanceScale").optional().isFloat({ min: 1, max: 20 }).withMessage("Guidance scale must be between 1 and 20"),
+  body("width")
+    .optional()
+    .isInt({ min: MIN_IMAGE_DIMENSION, max: MAX_IMAGE_DIMENSION })
+    .withMessage(`Width must be between ${MIN_IMAGE_DIMENSION} and ${MAX_IMAGE_DIMENSION}`),
+  body("height")
+    .optional()
+    .isInt({ min: MIN_IMAGE_DIMENSION, max: MAX_IMAGE_DIMENSION })
+    .withMessage(`Height must be between ${MIN_IMAGE_DIMENSION} and ${MAX_IMAGE_DIMENSION}`),
+  body("samples")
+    .optional()
+    .isInt({ min: MIN_SAMPLES, max: MAX_SAMPLES })
+    .withMessage(`Samples must be between ${MIN_SAMPLES} and ${MAX_SAMPLES}`),
+  body("steps")
+    .optional()
+    .isInt({ min: MIN_STEPS, max: MAX_STEPS })
+    .withMessage(`Steps must be between ${MIN_STEPS} and ${MAX_STEPS}`),
+  body("guidanceScale")
+    .optional()
+    .isFloat({ min: MIN_GUIDANCE_SCALE, max: MAX_GUIDANCE_SCALE })
+    .withMessage(`Guidance scale must be between ${MIN_GUIDANCE_SCALE} and ${MAX_GUIDANCE_SCALE}`),
   body("enhancePrompt").optional().isBoolean(),
 ];
 

@@ -109,7 +109,7 @@
       img.src = url;
       img.alt = "Generated image " + (index + 1);
       img.loading = "lazy";
-      
+
       // Add error handling for image loading
       img.onerror = function () {
         card.innerHTML = '<div class="image-error">Failed to load image</div>';
