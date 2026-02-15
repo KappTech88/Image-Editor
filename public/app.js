@@ -22,7 +22,6 @@
   var guidanceVal = document.getElementById("guidance-val");
   var enhancePromptCheckbox = document.getElementById("enhance-prompt");
   var promptInput = document.getElementById("prompt");
-  var negativePromptInput = document.getElementById("negative-prompt");
   var btnGenerate = document.getElementById("btn-generate");
   var statusEl = document.getElementById("status");
   var imageGrid = document.getElementById("image-grid");
@@ -319,7 +318,6 @@
       var requestBody = {
         apiKey: apiKey,
         prompt: prompt,
-        negativePrompt: negativePromptInput.value.trim(),
         model: modelSelect.value,
         width: imgWidth.value,
         height: imgHeight.value,

@@ -15,6 +15,9 @@ const MAX_POLL_ATTEMPTS = 30;
 const POLL_INTERVAL = 3000; // 3 seconds
 const MAX_PROMPT_LENGTH = 1000; // Maximum characters for prompts
 
+// System negative prompt for image quality control
+const SYSTEM_NEGATIVE_PROMPT = "blurry, low quality, distorted, deformed, ugly, bad anatomy, bad proportions, watermark, signature, text, logo, jpeg artifacts, compression artifacts, low resolution, worst quality, normal quality, amateur, beginner, grainy, out of focus, poorly drawn";
+
 // Image generation limits
 const MIN_IMAGE_DIMENSION = 64;
 const MAX_IMAGE_DIMENSION = 2048;
@@ -68,11 +71,6 @@ const sharedValidation = [
     .withMessage("Prompt is required")
     .isLength({ max: MAX_PROMPT_LENGTH })
     .withMessage("Prompt too long"),
-  body("negativePrompt")
-    .optional()
-    .trim()
-    .isLength({ max: MAX_PROMPT_LENGTH })
-    .withMessage("Negative prompt too long"),
   body("model").optional().trim(),
   body("width")
     .optional()
@@ -127,14 +125,14 @@ app.post("/api/generate", validateGenerate, async (req, res) => {
     return res.status(400).json({ error: errors.array()[0].msg });
   }
 
-  const { apiKey, prompt, negativePrompt, model, width, height, samples, steps, guidanceScale, enhancePrompt } = req.body;
+  const { apiKey, prompt, model, width, height, samples, steps, guidanceScale, enhancePrompt } = req.body;
 
   try {
     const body = {
       key: apiKey,
-      model_id: model || "flux",
+      model_id: model || "grok",
       prompt: prompt,
-      negative_prompt: negativePrompt || "",
+      negative_prompt: SYSTEM_NEGATIVE_PROMPT,
       width: width || "512",
       height: height || "512",
       samples: samples || "1",
@@ -205,16 +203,16 @@ app.post("/api/img2img", validateImg2Img, async (req, res) => {
   }
 
   const {
-    apiKey, prompt, negativePrompt, model, width, height,
+    apiKey, prompt, model, width, height,
     samples, steps, guidanceScale, enhancePrompt, initImage, strength,
   } = req.body;
 
   try {
     const body = {
       key: apiKey,
-      model_id: model || "flux",
+      model_id: model || "grok",
       prompt: prompt,
-      negative_prompt: negativePrompt || "",
+      negative_prompt: SYSTEM_NEGATIVE_PROMPT,
       init_image: initImage,
       width: width || "512",
       height: height || "512",
